@@ -2,7 +2,7 @@ As someone entering that certain age, where a heavy cardstock "save the date" gr
 
 It's pretty rough.
 
-Weddings should be classy, reserved, *sophisticated* ceremonies &mdash; meaning a robot waitstaff is, admittedly, probably an idea whose time has not yet come (as of this moment). But that doesn't mean we can't advance the state of things the tiniest bit. And I know just where to start: wedding cameras.
+Weddings should be classy, reserved, *sophisticated* ceremonies &mdash; meaning a robot waitstaff is probably out of the question. But that doesn't mean we can't advance the state of things the tiniest bit. And I know just where to start: wedding cameras.
 
 Not the camera a wedding photographer hired by the couple might use to take their official portraits, but the disposable *cameras* that are bought en masse for people to record memories for the happy pair.
 
@@ -10,7 +10,7 @@ I say we update this system by building an app (using Twilio, everyone's favorit
 
 ## Setup
 
-Copy this `package.json` file. We're going to use this to install our project's dependencies.
+First let's copy this `package.json` file. We're going to use this to install our project's dependencies.
 
 ````javascript
 {
@@ -33,11 +33,11 @@ Copy this `package.json` file. We're going to use this to install our project's 
 }
 ````
 
-Enter `npm install` from within the directory containing `package.json`. That will download everything we need to get going!
+Enter `npm install` from within the directory containing `package.json`. That will download everything we need to get going.
 
 To clarify our project goals: We want to build an app that will allow people to text their wedding pictures to our Twilio number and then display them in a running slideshow we can display via a projector. That way people can enjoy some of their treasured moments during the actual event.
 
-To get started, let's first use Express to build a simple server. We're also going to add Twilio to the mix just because we'll need it in a bit after we get things running.
+To get started, let's use Express to build a simple server. We're also going to add Twilio to the mix, since we're going to need it in a bit.
 
 ````javascript
 var twilio = require('twilio');
@@ -73,7 +73,7 @@ Now that we've got our server, let's start grafting cool things onto it. Enter T
 
 ## Using TwiML, The Twilio Markup Language
 
-Twilio runs off [webhooks](http://en.wikipedia.org/wiki/Webhook), meaning that when someone sends a text message, either an SMS or MMS, to your Twilio number, a server controlled by Twilio sends an HTTP POST request to wherever you specificy with information like the text's body and the phone number sending it in the request's parameters. The idea behind this is that you can configure Twilio to send information to your app, and then either respond with TwiML code, which is an XML-like shorthand TwiLio uses to direct certain actions, or by saving the information to your servers and doing whatever you want with it there (or doing both, which is our course of action).
+Twilio runs off [webhooks](http://en.wikipedia.org/wiki/Webhook), meaning that when someone sends a text message, either an SMS or MMS, to your Twilio number, a server controlled by Twilio sends an HTTP POST request to wherever you specificy with information like the text's body and the phone number it's coming from in the request's parameters. The idea behind this is that you can configure Twilio to send information to your app, and then either respond with TwiML code, which is an XML-like shorthand TwiLio uses to direct certain actions, or by saving the information to your servers and doing whatever you want with it there (or doing both, which is our course of action).
 
 Let's copy some of the TwiML boilerplate from the Twilio API documentation, just to get things going.
 
@@ -160,9 +160,14 @@ Speaking of passing around a picture's URL...
 
 ## Hooking Up `socket.io`
 
-Now that we've got the URL of the pictures we're texting in to our MMS-enabled Twilio number (that in turn is communicating with our Node server via webhooks), we need to push those URLs to our client, so we can display them in a slideshow. We can do this using `socket.io`. Commenting out our Twilio code, we can do a simple test of our `io` object's `emit()` function, which communicates an event and passes associated data to each connected client, with the following snippets.
+Now that we've got the URL of the pictures we're texting in to our MMS-enabled Twilio number (that in turn is communicating with our Node server via webhooks), we need to push those URLs to our client, so we can display them in a slideshow. We can do this using `socket.io`. Let's add a line to our `index.js` to support a `socket.io` server:
 
-In `index.js`:
+````javascript
+var io = require('socket.io')(server);
+````
+
+Commenting out our Twilio code, we can do a simple test of our `io` object's `emit()` function, which communicates an event and passes associated data to each connected client, with the following snippets.
+
 
 ````javascript
 function update () {
@@ -304,7 +309,11 @@ There are *a lot* of jQuery slideshow plugins. But they don't really allow for u
 
 The simplest way of going about this is using jQuery and its "nth-child()" selector to iterate through all the `<img>` tags we have nested under our `#slides` div. By changing through slides one at a time, and calculating the number of slides at each function call (properly resetting when necessary), we can ensure that all of our slides get shown. It's useful to note when you're reading the code that the first image in our slide show will always be "nth-child(1)" (and not "nth-child(0)") because of the way nth-child works.
 
-Here's the code for our finishes `index.html`. I've added a couple of filler `<img>` tags so our `length` call won't be 0.
+Once we finish looping over elements with "nth-child()", all we need is to `fadeIn()` and `fadeOut()` the elements we're iterating over, separating those two functions with a `delay()` call. Here's our full app, starting with the  `index.html` we've just now modified and the `index.js` which is just putting together everything we've already talked about.
+
+Note that for the `index.html` I've added a couple of filler `<img>` tags so our `length` call won't be 0, and changed the styling to reflect our desire to make the pictures we text in full-screen, but not stretched or distorted.
+
+The `index.html`:
 
 ````javascript
 <html>
@@ -367,9 +376,50 @@ Here's the code for our finishes `index.html`. I've added a couple of filler `<i
 
 
 ````
+
+The `index.js`:
+
+````javascript
+var app = require('express')();
+var server = require('http').Server(app);
+var twilio = require('twilio');
+var bodyParser = require('body-parser');
+var io = require('socket.io')(server);
+
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.get('/', function(req, res){
+    res.sendFile(__dirname + '/index.html');
+});
+
+// Handle an incoming request from Twilio
+app.post('/message', function(request, response) {
+    //create a TwiML response object. This object helps us generate an XML
+    //string that we will ultimately return as the result of this HTTP request
+    var twiml = new twilio.TwimlResponse();
+ 
+    // prepare the TwiML response
+    twiml.message(function() {
+        this.body('Text received!');
+    });
+
+    if (request.body.NumMedia > 0) {
+        io.emit("picture", request.body.MediaUrl0)
+    }
+
+    // Render an XML response
+    response.type('text/xml');
+    response.send(twiml.toString());
+});
+
+server.listen(3000, function(){
+  console.log('listening on port 3000');
+});
+````
+
 ## Parting Thoughts
 
-That's it, we're done! Although you can go through the extra steps to deploy this app, it's also not necessary, since you could just as easily run this program on a laptop hooked up to a projector, set up ngrok, and call it a day.
+That's it, we're done! Although you can go through the extra steps to deploy this app, it's also not necessary, since you could just as easily run this program on a laptop hooked up to a projector with ngrok set up and call it a day.
 
 Sadly, the app isn't entirely free, since Twilio charges about a dollar a number, plus one cent per incoming MMS message. The confirmation texts are a fraction of a cent each but also aren't necessary, strictly speaking. Still, it's a bargain when you consider all those instant cameras it's replacing!
 
@@ -377,6 +427,6 @@ The next time someone in your life gets married, or you're doing another event t
 
 If you're interested in how Node interacts with popular communication APIs like Twilio, check out [this tutorial on the Twitter RESTful and Streaming APIs](https://www.airpair.com/node.js/posts/southbotfunwest-a-twitterbot-that-recommends-sxsw-parties).
 
-Thanks for reading and congratulations, you crazy kids. I've got a feeling you're going to be alright.
+Thanks for reading.
 
 @joecharmar
