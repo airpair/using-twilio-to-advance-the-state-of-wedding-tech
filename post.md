@@ -107,7 +107,7 @@ Enter `ngrok 3000` (since we're using port 3000 for our app) and you should see 
 
 Now go to your Twilio account page and specifically your [phone number index page](https://www.twilio.com/user/account/phone-numbers/incoming). Click on the number you want to use. Make sure there's a picture icon listed under the number indicating that it's MMS-enabled.
 
-Under the "Messaging" dropdown, find the "Request URL" field and put in the (http) URL you copied from the ngrok terminal output. Make sure to save your URL.
+Under the "Messaging" dropdown, find the "Request URL" field and put in the (http) URL you copied from the ngrok terminal output, making sure to add `/message` to the end, which is the path we've told our Node server to use for receiving Twilio webhooks. Make sure to save your URL.
 
 If you spin up the app with `npm start` and text your number, you should get an Adventure Time GIF in response!
 
