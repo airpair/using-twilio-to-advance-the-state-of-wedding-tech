@@ -8,6 +8,17 @@ Not the camera a wedding photographer hired by the couple might use to take thei
 
 I say we update this system by building an app (using Twilio, everyone's favorite text and voice messaging API) that allows people to text in their pictures and share their precious wedding moments in realtime. Let's build it and, in the process, learn how Node and Twilio can be combined to make just about any SMS or MMS sharing solution possible.
 
+## The App
+
+To clarify what we'd like to achieve with this project: We want to build an app that will allow people to text their wedding pictures to our Twilio number and then display them in a running slideshow displayable via a projector. The slideshow app should:
+
+* Cycle through all available slides continously
+* Update itself as pictures come in
+* Animate slide transitions smoothly
+* Respond to texts with a confirmation SMS
+
+There are a lot of bells and whistles this list doesn't cover, but it's a good target for getting us started.
+
 ## Setup
 
 First let's copy this `package.json` file. We're going to use this to install our project's dependencies.
@@ -35,9 +46,8 @@ First let's copy this `package.json` file. We're going to use this to install ou
 
 Enter `npm install` from within the directory containing `package.json`. That will download everything we need to get going.
 
-To clarify our project goals: We want to build an app that will allow people to text their wedding pictures to our Twilio number and then display them in a running slideshow we can display via a projector. That way people can enjoy some of their treasured moments during the actual event.
 
-To get started, let's use Express to build a simple server. We're also going to add Twilio to the mix, since we're going to need it in a bit.
+For our first task, let's use Express to build a simple server. We're also going to add Twilio to the mix, since we're going to need it in a bit.
 
 ````javascript
 var twilio = require('twilio');
