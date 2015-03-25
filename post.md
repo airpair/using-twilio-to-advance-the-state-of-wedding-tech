@@ -21,7 +21,7 @@ There are a lot of bells and whistles this list doesn't cover, but it's a good t
 
 ## Setup
 
-First let's copy this `package.json` file. We're going to use this to install our project's dependencies.
+Create a new directory for the app and inside create a new file named `package.json`. We're going to use this to install our project's dependencies.
 
 ````javascript
 {
